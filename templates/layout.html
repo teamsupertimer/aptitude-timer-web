@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}시험용 타이머{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-container">
+        <a href="{{ url_for('dashboard') if current_user else url_for('login') }}" class="brand">시험용 타이머</a>
+        <div class="nav-links">
+          {% if current_user %}
+          <span class="welcome">안녕하세요, {{ current_user['username'] }}님</span>
+          <a href="{{ url_for('dashboard') }}">대시보드</a>
+          <a href="{{ url_for('logout') }}">로그아웃</a>
+          {% else %}
+          <a href="{{ url_for('login') }}">로그인</a>
+          <a href="{{ url_for('register') }}">회원가입</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for message in messages %}
+              <div class="flash">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

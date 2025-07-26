@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block title %}대시보드 - 시험용 타이머{% endblock %}
+{% block content %}
+<h1>대시보드</h1>
+
+<section>
+  <h2>시험 선택</h2>
+  <ul class="timer-list">
+    {% for name, mins in PRESET_TIMERS.items() %}
+      <li>
+        <strong>{{ name }}</strong> – {{ mins }}분
+        <a class="btn" href="{{ url_for('timer', exam=name) }}">시작</a>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section>
+  <h2>사용자 정의 타이머 만들기</h2>
+  <form method="post" class="form-inline">
+    <input type="text" name="exam_name" placeholder="타이머 이름" required>
+    <input type="number" name="minutes" placeholder="분" min="1" required>
+    <button type="submit">저장</button>
+  </form>
+</section>
+
+<section>
+  <h2>저장된 타이머</h2>
+  {% if timers %}
+    <ul class="timer-list">
+      {% for t in timers %}
+        <li>
+          <strong>{{ t['exam_name'] }}</strong> – {{ t['minutes'] }}분
+          <a class="btn" href="{{ url_for('timer', exam=t['id']) }}">시작</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>저장된 타이머가 없습니다.</p>
+  {% endif %}
+</section>
+{% endblock %}

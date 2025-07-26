@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 대시보드 페이지 제목 수정: 다양한 시험용 타이머 사이트 -->
+    <title>대시보드 - 시험용 타이머</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js"></script>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-container">
+        <a class="brand" href="category.html">시험용 타이머</a>
+        <div id="nav-right">
+          <!-- dynamic: welcome + logout -->
+        </div>
+      </div>
+    </nav>
+    <main class="container">
+      <h1>대시보드</h1>
+      <div class="section">
+        <h2>사전 설정 시험</h2>
+        <div id="presetContainer"></div>
+      </div>
+
+      <div class="section">
+        <h2>실전 모드</h2>
+        <p class="small-text">각 기업 시험을 실제 순서대로 연속 실행합니다.</p>
+        <div id="sequenceContainer"></div>
+      </div>
+      <div class="section">
+        <h2>사용자 정의 시험 구성</h2>
+        <p class="small-text">각 교시와 교시 사이의 휴식 시간을 포함해 원하는 순서대로 구성할 수 있습니다.</p>
+        <form id="sequenceForm" class="form">
+          <input type="text" id="sequenceName" placeholder="시험 이름" required>
+          <div id="segments-container">
+            <!-- 세션 행들이 동적으로 추가됩니다 -->
+          </div>
+          <button type="button" id="addSegment" class="btn" style="margin-top:0.5rem;">세션 추가</button>
+          <button type="submit" class="btn" style="margin-top:0.5rem;">저장</button>
+        </form>
+      </div>
+      <div class="section">
+        <h2>저장된 타이머</h2>
+        <ul id="savedList" class="timer-list"></ul>
+      </div>
+    </main>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // 로그인 없이도 사용할 수 있도록 기본 사용자 이름을 guest로 설정합니다.
+        const user = localStorage.getItem('loggedInUser') || 'guest';
+        const navRight = document.getElementById('nav-right');
+        // 로그인 없는 버전에서는 사용자 인사말이나 로그아웃 버튼을 표시하지 않습니다.
+        navRight.innerHTML = '';
+        // Parse selected top-level category from query parameter.
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedGroup = urlParams.get('group') || 'corporate';
+        // Predefined timers
+        // 각 시험의 세부 과목과 시간. 기업, 대입, 공인영어 시험들을 모두 포함한다.
+        const presets = {
+          // 대기업 입사 시험
+          'GSAT 전체시험': 140,
+          'SKCT 실행역량': 20,
+          'SKCT 인지역량 – 언어이해': 15,
+          'SKCT 인지역량 – 자료해석': 15,
+          'SKCT 인지역량 – 창의수리': 15,
+          'SKCT 인지역량 – 언어논리': 15,
+          'SKCT 인지역량 – 도식추리': 15,
+          'SKCT 한국사': 5,
+          'SKCT 인성검사': 50,
+          '한화HAT 인문 – 언어능력': 41,
+          '한화HAT 인문 – 언어추리': 35,
+          '한화HAT 인문 – 자료해석': 30,
+          '한화HAT 인문 – 휴식': 15,
+          '한화HAT 인문 – 인성검사': 40,
+          '한화HAT 이공 – 언어능력': 47,
+          '한화HAT 이공 – 언어추리': 30,
+          '한화HAT 이공 – 자료해석': 30,
+          '한화HAT 이공 – 휴식': 15,
+          '한화HAT 이공 – 인성검사': 65,
+          'LG 적성검사': 40,
+          'LG 인성검사 (LG Way Fit)': 20,
+          'LS 적성검사': 60,
+          'LS 인성검사': 50,
+          'HMAT 전체시험': 145,
+          // 대입 시험 (수능) - 각 교시 및 휴식시간
+          '수능 – 국어': 80,
+          '수능 – 휴식1': 20,
+          '수능 – 수학': 100,
+          '수능 – 점심시간': 50,
+          // 영어 과목의 듣기평가(25분)를 제외한 순수 문제풀이 시간만을 고려합니다.
+          // 이름도 "영어-듣기제외"로 변경하여 다른 과목과 구분합니다.
+          '수능 – 영어-듣기제외': 45,
+          '수능 – 휴식2': 20,
+          '수능 – 한국사': 30,
+          '수능 – 탐구1': 30,
+          '수능 – 탐구2': 30,
+          '수능 – 휴식3': 18,
+          '수능 – 제2외국어/한문': 40,
+          // 공인 영어 시험
+          'TOEIC – Listening': 45,
+          'TOEIC – Reading': 75,
+          'TOEFL – Reading': 60,
+          'TOEFL – Listening': 50,
+          'TOEFL – 휴식': 10,
+          'TOEFL – Speaking': 17,
+          'TOEFL – Writing': 50
+        };
+        // Categorize preset timers by subcategory (exam name) and filter by selected top-level group.
+        const presetContainer = document.getElementById('presetContainer');
+        const categories = {};
+        Object.keys(presets).forEach(name => {
+          const minutesVal = presets[name];
+          // Determine high-level group for each preset
+          let groupOfName = '';
+          if (name.startsWith('GSAT') || name.startsWith('SKCT') || name.startsWith('한화HAT') || name.startsWith('LG') || name.startsWith('LS') || name.startsWith('HMAT')) {
+            groupOfName = 'corporate';
+          } else if (name.startsWith('수능')) {
+            groupOfName = 'college';
+          } else if (name.startsWith('TOEIC') || name.startsWith('TOEFL')) {
+            groupOfName = 'english';
+          } else {
+            groupOfName = 'other';
+          }
+          // Skip presets not belonging to the selected group
+          if (groupOfName !== selectedGroup) return;
+          // Determine subcategory (exam identifier) based on prefix
+          let category = '';
+          if (name.startsWith('SKCT')) category = 'SKCT';
+          else if (name.startsWith('한화HAT 인문')) category = '한화HAT 인문';
+          else if (name.startsWith('한화HAT 이공')) category = '한화HAT 이공';
+          else if (name.startsWith('LG')) category = 'LG';
+          else if (name.startsWith('LS')) category = 'LS';
+          else if (name.startsWith('GSAT')) category = 'GSAT';
+          else if (name.startsWith('HMAT')) category = 'HMAT';
+          else if (name.startsWith('수능')) category = '수능';
+          else if (name.startsWith('TOEIC')) category = 'TOEIC';
+          else if (name.startsWith('TOEFL')) category = 'TOEFL';
+          else category = '기타';
+          if (!categories[category]) categories[category] = [];
+          categories[category].push({ name, minutes: minutesVal });
+        });
+        // Render categories for the selected group
+        Object.keys(categories).forEach(cat => {
+          const div = document.createElement('div');
+          const h3 = document.createElement('h3');
+          h3.textContent = cat;
+          div.appendChild(h3);
+          const ul = document.createElement('ul');
+          ul.className = 'timer-list';
+          categories[cat].forEach(item => {
+            const li = document.createElement('li');
+            const strong = document.createElement('strong');
+            strong.textContent = item.name;
+            const span = document.createElement('span');
+            span.textContent = ' – ' + item.minutes + '분';
+            const btn = document.createElement('a');
+            btn.className = 'btn';
+            btn.textContent = '시작';
+            // include group parameter so timer page can return to the same category
+            btn.href = 'timer.html?exam=' + encodeURIComponent(item.name) + '&minutes=' + encodeURIComponent(item.minutes) + '&group=' + encodeURIComponent(selectedGroup);
+            li.appendChild(strong);
+            li.appendChild(span);
+            li.appendChild(btn);
+            ul.appendChild(li);
+          });
+          div.appendChild(ul);
+          presetContainer.appendChild(div);
+        });
+
+        // Sequence presets grouped by exam name with display names, totals and high-level group.
+        const sequencePresets = {
+          'SKCT': { display: 'SKCT 전체 연속', total: 20 + (15 * 5) + 5 + 50, group: 'corporate' },
+          '한화HAT 인문': { display: '한화HAT 인문 전체 연속', total: 41 + 35 + 30 + 15 + 40, group: 'corporate' },
+          '한화HAT 이공': { display: '한화HAT 이공 전체 연속', total: 47 + 30 + 30 + 15 + 65, group: 'corporate' },
+          'LG': { display: 'LG 전체 연속', total: 40 + 20, group: 'corporate' },
+          'LS': { display: 'LS 전체 연속', total: 60 + 50, group: 'corporate' },
+          // 영어 영역의 듣기평가 시간을 제외한 45분을 반영하여 총 시험 시간도 조정합니다.
+          '수능': { display: '수능 전체 연속', total: 80 + 20 + 100 + 50 + 45 + 20 + 30 + 30 + 30 + 18 + 40, group: 'college' },
+          'TOEIC': { display: 'TOEIC 전체 연속', total: 45 + 75, group: 'english' },
+          'TOEFL': { display: 'TOEFL 전체 연속', total: 60 + 50 + 10 + 17 + 50, group: 'english' }
+        };
+        const sequenceContainer = document.getElementById('sequenceContainer');
+        Object.keys(sequencePresets).forEach(key => {
+          const info = sequencePresets[key];
+          // Only render sequences belonging to the selected group
+          if (info.group !== selectedGroup) return;
+          const div = document.createElement('div');
+          const h3 = document.createElement('h3');
+          h3.textContent = key;
+          div.appendChild(h3);
+          const ul = document.createElement('ul');
+          ul.className = 'timer-list';
+          const li = document.createElement('li');
+          const strong = document.createElement('strong');
+          strong.textContent = info.display;
+          const span = document.createElement('span');
+          span.textContent = ' – ' + info.total + '분';
+          const btn = document.createElement('a');
+          btn.className = 'btn';
+          btn.textContent = '실전 시작';
+          btn.href = 'timer.html?exam=' + encodeURIComponent(key) + '&sequence=1' + '&group=' + encodeURIComponent(selectedGroup);
+          li.appendChild(strong);
+          li.appendChild(span);
+          li.appendChild(btn);
+          ul.appendChild(li);
+          div.appendChild(ul);
+          sequenceContainer.appendChild(div);
+        });
+        // Load saved timers
+        function renderSaved() {
+          const savedList = document.getElementById('savedList');
+          savedList.innerHTML = '';
+          const timers = getTimers(user);
+          if (timers.length === 0) {
+            const p = document.createElement('p');
+            p.textContent = '저장된 타이머가 없습니다.';
+            savedList.appendChild(p);
+            return;
+          }
+          timers.forEach(t => {
+            const li = document.createElement('li');
+            const leftDiv = document.createElement('div');
+            leftDiv.style.flex = '1';
+            const strong = document.createElement('strong');
+            strong.textContent = t.name;
+            leftDiv.appendChild(strong);
+            const span = document.createElement('span');
+            span.style.marginLeft = '0.5rem';
+            span.textContent = ' – ' + t.minutes + '분';
+            leftDiv.appendChild(span);
+            // If the timer has segments, show number of segments
+            if (t.segments) {
+              const segInfo = document.createElement('span');
+              segInfo.style.fontSize = '0.8rem';
+              segInfo.style.color = '#666';
+              segInfo.style.marginLeft = '0.5rem';
+              segInfo.textContent = '(' + t.segments.length + '세션)';
+              leftDiv.appendChild(segInfo);
+            }
+            li.appendChild(leftDiv);
+            const startBtn = document.createElement('a');
+            startBtn.className = 'btn';
+            startBtn.textContent = '시작';
+            // Use id parameter to load saved sequence
+            startBtn.href = 'timer.html?id=' + t.id;
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn';
+            delBtn.style.backgroundColor = '#b30000';
+            delBtn.textContent = '삭제';
+            delBtn.addEventListener('click', function() {
+              if (confirm('해당 타이머를 삭제하시겠습니까?')) {
+                removeTimer(user, t.id);
+                renderSaved();
+              }
+            });
+            // container for buttons
+            const rightDiv = document.createElement('div');
+            rightDiv.style.display = 'flex';
+            rightDiv.style.gap = '0.5rem';
+            rightDiv.appendChild(startBtn);
+            rightDiv.appendChild(delBtn);
+            li.appendChild(rightDiv);
+            savedList.appendChild(li);
+          });
+        }
+        renderSaved();
+        // Handle dynamic segment addition
+        const segmentsContainer = document.getElementById('segments-container');
+        const addSegmentBtn = document.getElementById('addSegment');
+        function addSegmentRow(name = '', minutes = '') {
+          const row = document.createElement('div');
+          row.className = 'segment-row';
+          row.style.display = 'flex';
+          row.style.gap = '0.5rem';
+          row.style.marginBottom = '0.5rem';
+          const nameInput = document.createElement('input');
+          nameInput.type = 'text';
+          nameInput.className = 'segment-name';
+          nameInput.placeholder = '세션 이름';
+          nameInput.required = true;
+          nameInput.value = name;
+          const minInput = document.createElement('input');
+          minInput.type = 'number';
+          minInput.className = 'segment-minutes';
+          minInput.placeholder = '분';
+          minInput.min = '1';
+          minInput.required = true;
+          minInput.value = minutes;
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'btn';
+          removeBtn.style.backgroundColor = '#666';
+          removeBtn.textContent = '삭제';
+          removeBtn.type = 'button';
+          removeBtn.addEventListener('click', function() {
+            segmentsContainer.removeChild(row);
+          });
+          row.appendChild(nameInput);
+          row.appendChild(minInput);
+          row.appendChild(removeBtn);
+          segmentsContainer.appendChild(row);
+        }
+        addSegmentBtn.addEventListener('click', function() {
+          addSegmentRow();
+        });
+        // At least one segment row on load
+        addSegmentRow();
+        // Handle sequence form submission
+        const sequenceForm = document.getElementById('sequenceForm');
+        sequenceForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          const seqName = document.getElementById('sequenceName').value.trim();
+          if (!seqName) return;
+          const segmentRows = segmentsContainer.querySelectorAll('.segment-row');
+          const segs = [];
+          segmentRows.forEach(row => {
+            const n = row.querySelector('.segment-name').value.trim();
+            const m = row.querySelector('.segment-minutes').value;
+            if (n && m) {
+              segs.push({ name: n, minutes: parseInt(m, 10) });
+            }
+          });
+          if (segs.length === 0) {
+            alert('적어도 하나의 세션을 추가해야 합니다.');
+            return;
+          }
+          addSequenceTimer(user, seqName, segs);
+          // reset form
+          document.getElementById('sequenceName').value = '';
+          segmentsContainer.innerHTML = '';
+          addSegmentRow();
+          renderSaved();
+          alert('사용자 정의 시험이 저장되었습니다.');
+        });
+      });
+    </script>
+  </body>
+</html>

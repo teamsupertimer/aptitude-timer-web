@@ -1,0 +1,182 @@
+/* Shared styles for the aptitude test timer static site */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #f7f8fa;
+  color: #333;
+}
+
+.navbar {
+  background-color: #004080;
+  color: #fff;
+  padding: 1rem 0;
+}
+
+.nav-container {
+  width: 90%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-container a {
+  color: #fff;
+  text-decoration: none;
+  margin-left: 0.5rem;
+}
+
+/* Remove left margin for brand anchor so it aligns left */
+.nav-container a.brand {
+  margin-left: 0;
+}
+
+.nav-container .brand {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.welcome {
+  margin-right: 1rem;
+  font-size: 0.9rem;
+  color: #dce6f6;
+}
+
+.container {
+  width: 90%;
+  max-width: 900px;
+  margin: 2rem auto;
+}
+
+h1, h2 {
+  color: #004080;
+  margin-top: 0;
+}
+
+.form, .form-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.form-inline {
+  flex-direction: row;
+  align-items: center;
+}
+
+.form-inline input[type="text"], .form-inline input[type="number"],
+.form-inline input[type="password"] {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.form input[type="text"],
+.form input[type="password"],
+.form input[type="number"] {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.form button, .form-inline button, .btn {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #004080;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 0.9rem;
+}
+
+.form button:hover, .form-inline button:hover, .btn:hover {
+  background-color: #003366;
+}
+
+.small-text {
+  font-size: 0.85rem;
+}
+
+.flash {
+  background-color: #ffe5e5;
+  border: 1px solid #ffa8a8;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  color: #b30000;
+}
+
+/* Flash effect for timer completion: applied to body */
+.body-flash {
+  background-color: #ffcccc !important;
+}
+
+.timer-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.timer-list li {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timer-display {
+  font-size: 4rem;
+  font-weight: bold;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.timer-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.timer-controls button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+/* Progress bar for timers */
+#progress-container {
+  width: 100%;
+  height: 0.75rem;
+  background-color: transparent;
+  border: 1px solid #8da6c0;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+#progress-bar {
+  height: 100%;
+  background-color: #004080;
+  width: 100%;
+  border-radius: 4px;
+  transition: width 0.1s linear;
+}
+
+.back {
+  display: block;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.section {
+  margin-bottom: 2rem;
+}

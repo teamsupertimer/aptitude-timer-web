@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+{% block title %}{{ exam_name }} 타이머 - 시험용 타이머{% endblock %}
+{% block content %}
+<h1>{{ exam_name }} 타이머</h1>
+<p>총 시험 시간: {{ minutes }}분</p>
+
+<div id="timer-display" class="timer-display">{{ '%02d:%02d' % (minutes, 0) }}</div>
+
+<div class="timer-controls">
+  <button id="start-btn">시작</button>
+  <button id="pause-btn" disabled>일시정지</button>
+  <button id="reset-btn" disabled>리셋</button>
+</div>
+
+<a href="{{ url_for('dashboard') }}" class="btn back">← 대시보드로 돌아가기</a>
+
+<script>
+  (function() {
+    const totalMinutes = {{ minutes }};
+    let remainingSeconds = totalMinutes * 60;
+    let interval = null;
+    const display = document.getElementById('timer-display');
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function updateDisplay() {
+      display.textContent = formatTime(remainingSeconds);
+    }
+
+    function tick() {
+      if (remainingSeconds > 0) {
+        remainingSeconds -= 1;
+        updateDisplay();
+      } else {
+        clearInterval(interval);
+        interval = null;
+        startBtn.disabled = true;
+        pauseBtn.disabled = true;
+        resetBtn.disabled = false;
+        alert('시간이 종료되었습니다!');
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!interval) {
+        interval = setInterval(tick, 1000);
+      }
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      resetBtn.disabled = false;
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+        pauseBtn.textContent = '재개';
+      } else {
+        interval = setInterval(tick, 1000);
+        pauseBtn.textContent = '일시정지';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+      remainingSeconds = totalMinutes * 60;
+      updateDisplay();
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      pauseBtn.textContent = '일시정지';
+      resetBtn.disabled = true;
+    });
+
+    // Initialize display
+    updateDisplay();
+  })();
+</script>
+{% endblock %}
